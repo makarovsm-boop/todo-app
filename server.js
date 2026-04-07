@@ -4,7 +4,7 @@ const path = require("path");
 const Database = require("better-sqlite3");
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 const databasePath = path.join(__dirname, "todo.db");
 const sessionCookieName = "todo_session";
 
