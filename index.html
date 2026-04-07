@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple To-Do List</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <p class="eyebrow">Beginner Project</p>
+        <h1>My To-Do List</h1>
+        <p class="subtitle">
+          Create an account, log in, and manage only your own saved tasks.
+        </p>
+      </header>
+
+      <section id="auth-section" class="auth-card">
+        <div class="auth-toggle" aria-label="Choose login or registration">
+          <button type="button" class="auth-toggle-btn active" data-mode="login">
+            Login
+          </button>
+          <button type="button" class="auth-toggle-btn" data-mode="register">
+            Register
+          </button>
+        </div>
+
+        <form class="auth-form" id="auth-form">
+          <label class="field-label" for="auth-username-input">Username</label>
+          <input
+            type="text"
+            id="auth-username-input"
+            placeholder="Choose a username"
+            autocomplete="username"
+          />
+
+          <label class="field-label" for="auth-password-input">Password</label>
+          <input
+            type="password"
+            id="auth-password-input"
+            placeholder="Use at least 8 characters"
+            autocomplete="current-password"
+          />
+
+          <button type="submit" id="auth-submit-btn">Login</button>
+        </form>
+
+        <p id="auth-helper-text" class="auth-helper">
+          Log in with your existing account to see your tasks.
+        </p>
+
+        <p
+          id="auth-status-message"
+          class="status-message hidden"
+          role="status"
+        ></p>
+      </section>
+
+      <section id="todo-section" class="todo-section hidden">
+        <div class="session-bar">
+          <div>
+            <p class="session-label">Logged in as</p>
+            <p id="current-user" class="current-user">username</p>
+          </div>
+
+          <button type="button" class="logout-btn" id="logout-btn">
+            Logout
+          </button>
+        </div>
+
+        <form class="todo-form" id="todo-form">
+          <input
+            type="text"
+            id="todo-input"
+            placeholder="What do you need to do?"
+            autocomplete="off"
+          />
+
+          <input
+            type="text"
+            id="category-input"
+            placeholder="Category (example: School)"
+            autocomplete="off"
+          />
+
+          <select id="priority-input">
+            <option value="Low">Low Priority</option>
+            <option value="Medium" selected>Medium Priority</option>
+            <option value="High">High Priority</option>
+          </select>
+
+          <input type="date" id="due-date-input" />
+
+          <button type="submit">Add Task</button>
+        </form>
+
+        <p id="status-message" class="status-message hidden" role="status"></p>
+
+        <section class="toolbar">
+          <div class="task-summary">
+            <span id="task-count">0 tasks</span>
+          </div>
+
+          <div class="filters" aria-label="Task filters">
+            <button type="button" class="filter-btn active" data-filter="all">
+              All
+            </button>
+            <button type="button" class="filter-btn" data-filter="active">
+              Active
+            </button>
+            <button type="button" class="filter-btn" data-filter="completed">
+              Completed
+            </button>
+          </div>
+
+          <button type="button" class="clear-btn" id="clear-completed-btn">
+            Clear Completed
+          </button>
+        </section>
+
+        <ul id="todo-list" class="todo-list"></ul>
+
+        <p id="empty-message" class="empty-message">
+          No tasks yet. Add your first one above.
+        </p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
