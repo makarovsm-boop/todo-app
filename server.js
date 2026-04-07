@@ -421,7 +421,7 @@ function verifyPassword(password, storedPassword) {
   if (savedHashBuffer.length !== derivedHashBuffer.length) {
     return false;
   }
-
+ 
   return crypto.timingSafeEqual(
     savedHashBuffer,
     derivedHashBuffer
