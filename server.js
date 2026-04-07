@@ -247,7 +247,7 @@ app.get("/", function (request, response) {
 });
 
 app.listen(PORT, function () {
-  console.log("Server running at http://localhost:" + port);
+  console.log("Server running at http://localhost:" + PORT);
   console.log("Using SQLite database at " + databasePath);
 });
 
