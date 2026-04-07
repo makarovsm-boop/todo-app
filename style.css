@@ -38,6 +38,14 @@ body {
   margin-bottom: 28px;
 }
 
+.header-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   font-size: 13px;
@@ -56,6 +64,29 @@ h1 {
   margin: 12px 0 0;
   color: var(--muted-color);
   line-height: 1.5;
+}
+
+.language-switcher {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.language-switcher select {
+  min-width: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.language-switcher select:focus {
+  outline: 2px solid rgba(15, 118, 110, 0.18);
+  border-color: var(--primary-color);
 }
 
 .auth-card,
@@ -396,6 +427,10 @@ button:active {
   .app {
     margin: 20px;
     padding: 22px;
+  }
+
+  .header-top {
+    flex-direction: column;
   }
 
   .todo-form {

@@ -9,6 +9,7 @@ const authStatusMessage = document.getElementById("auth-status-message");
 const authModeButtons = document.querySelectorAll(".auth-toggle-btn");
 const currentUserLabel = document.getElementById("current-user");
 const logoutButton = document.getElementById("logout-btn");
+const languageSelect = document.getElementById("language-select");
 
 const todoForm = document.getElementById("todo-form");
 const todoInput = document.getElementById("todo-input");
@@ -24,15 +25,186 @@ const clearCompletedButton = document.getElementById("clear-completed-btn");
 
 const taskApiBaseUrl = "/tasks";
 const authApiBaseUrl = "/auth";
+const languageStorageKey = "todo-app-language";
+const defaultLanguage = "en";
+const translations = {
+  en: {
+    pageTitle: "Simple To-Do List",
+    eyebrow: "Beginner Project",
+    appTitle: "My To-Do List",
+    subtitle: "Create an account, log in, and manage only your own saved tasks.",
+    languageLabel: "Language",
+    authToggleAria: "Choose login or registration",
+    login: "Login",
+    register: "Register",
+    usernameLabel: "Username",
+    usernamePlaceholder: "Choose a username",
+    passwordLabel: "Password",
+    passwordPlaceholder: "Use at least 8 characters",
+    loggedInAs: "Logged in as",
+    logout: "Logout",
+    taskPlaceholder: "What do you need to do?",
+    categoryPlaceholder: "Category (example: School)",
+    priorityLowOption: "Low Priority",
+    priorityMediumOption: "Medium Priority",
+    priorityHighOption: "High Priority",
+    addTask: "Add Task",
+    taskFilters: "Task filters",
+    all: "All",
+    active: "Active",
+    completed: "Completed",
+    clearCompleted: "Clear Completed",
+    emptyMessage: "No tasks yet. Add your first one above.",
+    noTasksMatchFilter: "No tasks match the current filter.",
+    loginSuccess: "Logged in successfully.",
+    registerSuccess: "Account created successfully.",
+    createAccount: "Create Account",
+    authHelperLogin: "Log in with your existing account to see your tasks.",
+    authHelperRegister:
+      "Register a new account. Your password must be at least 8 characters long.",
+    enterUsernameAndPassword: "Please enter both a username and password.",
+    authenticationFailed: "Authentication failed.",
+    couldNotLogOut: "Could not log out.",
+    loggedOut: "You have been logged out.",
+    serverCouldNotLogYouOut: "The server could not log you out.",
+    enterTaskBeforeAdding: "Please enter a task before adding it.",
+    generalCategory: "General",
+    taskAdded: "Task added.",
+    serverCouldNotSaveTask: "The server could not save the task.",
+    noCompletedTasksToClear: "There are no completed tasks to clear.",
+    completedTasksCleared: "Completed tasks cleared.",
+    serverCouldNotClearCompleted: "The server could not clear completed tasks.",
+    couldNotCheckLoginStatus: "Could not check login status.",
+    appCouldNotCheckLoginStatus: "The app could not check your login status.",
+    appCouldNotLoadTasks: "The app could not load tasks from the server.",
+    categoryLabel: "Category",
+    priorityLabel: "Priority",
+    createdLabel: "Created",
+    dueLabel: "Due",
+    undo: "Undo",
+    done: "Done",
+    edit: "Edit",
+    delete: "Delete",
+    serverCouldNotUpdateTask: "The server could not update the task.",
+    taskDeleted: "Task deleted.",
+    serverCouldNotDeleteTask: "The server could not delete the task.",
+    editTaskTextPrompt: "Edit your task text:",
+    taskCannotBeEmpty: "A task cannot be empty.",
+    editCategoryPrompt: "Edit category:",
+    editPriorityPrompt: "Edit priority: Low, Medium, or High",
+    editDueDatePrompt:
+      "Edit due date in YYYY-MM-DD format. Leave blank for no due date.",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    taskUpdated: "Task updated.",
+    sessionEnded: "Your session ended. Please log in again.",
+    pleaseLogInFirst: "Please log in first.",
+    requestFailed: "The request failed.",
+    taskCountSingular: "{count} task",
+    taskCountPlural: "{count} tasks",
+    activeCount: "{count} active",
+  },
+  uk: {
+    pageTitle: "Простий список справ",
+    eyebrow: "Проєкт для початківців",
+    appTitle: "Мій список справ",
+    subtitle:
+      "Створіть акаунт, увійдіть і керуйте лише власними збереженими завданнями.",
+    languageLabel: "Мова",
+    authToggleAria: "Оберіть вхід або реєстрацію",
+    login: "Увійти",
+    register: "Реєстрація",
+    usernameLabel: "Ім'я користувача",
+    usernamePlaceholder: "Виберіть ім'я користувача",
+    passwordLabel: "Пароль",
+    passwordPlaceholder: "Використайте щонайменше 8 символів",
+    loggedInAs: "Увійшли як",
+    logout: "Вийти",
+    taskPlaceholder: "Що вам потрібно зробити?",
+    categoryPlaceholder: "Категорія (наприклад: Навчання)",
+    priorityLowOption: "Низький пріоритет",
+    priorityMediumOption: "Середній пріоритет",
+    priorityHighOption: "Високий пріоритет",
+    addTask: "Додати завдання",
+    taskFilters: "Фільтри завдань",
+    all: "Усі",
+    active: "Активні",
+    completed: "Виконані",
+    clearCompleted: "Очистити виконані",
+    emptyMessage: "Завдань ще немає. Додайте перше вище.",
+    noTasksMatchFilter: "Немає завдань для поточного фільтра.",
+    loginSuccess: "Вхід виконано успішно.",
+    registerSuccess: "Акаунт успішно створено.",
+    createAccount: "Створити акаунт",
+    authHelperLogin: "Увійдіть у свій акаунт, щоб побачити завдання.",
+    authHelperRegister:
+      "Зареєструйте новий акаунт. Пароль має містити щонайменше 8 символів.",
+    enterUsernameAndPassword: "Будь ласка, введіть ім'я користувача та пароль.",
+    authenticationFailed: "Помилка автентифікації.",
+    couldNotLogOut: "Не вдалося вийти.",
+    loggedOut: "Ви вийшли з акаунта.",
+    serverCouldNotLogYouOut: "Сервер не зміг завершити вихід.",
+    enterTaskBeforeAdding: "Введіть завдання перед додаванням.",
+    generalCategory: "Загальне",
+    taskAdded: "Завдання додано.",
+    serverCouldNotSaveTask: "Сервер не зміг зберегти завдання.",
+    noCompletedTasksToClear: "Немає виконаних завдань для очищення.",
+    completedTasksCleared: "Виконані завдання очищено.",
+    serverCouldNotClearCompleted:
+      "Сервер не зміг очистити виконані завдання.",
+    couldNotCheckLoginStatus: "Не вдалося перевірити стан входу.",
+    appCouldNotCheckLoginStatus:
+      "Програма не змогла перевірити ваш стан входу.",
+    appCouldNotLoadTasks: "Програма не змогла завантажити завдання із сервера.",
+    categoryLabel: "Категорія",
+    priorityLabel: "Пріоритет",
+    createdLabel: "Створено",
+    dueLabel: "Термін",
+    undo: "Скасувати",
+    done: "Готово",
+    edit: "Редагувати",
+    delete: "Видалити",
+    serverCouldNotUpdateTask: "Сервер не зміг оновити завдання.",
+    taskDeleted: "Завдання видалено.",
+    serverCouldNotDeleteTask: "Сервер не зміг видалити завдання.",
+    editTaskTextPrompt: "Відредагуйте текст завдання:",
+    taskCannotBeEmpty: "Завдання не може бути порожнім.",
+    editCategoryPrompt: "Відредагуйте категорію:",
+    editPriorityPrompt: "Відредагуйте пріоритет: Low, Medium або High",
+    editDueDatePrompt:
+      "Відредагуйте дату у форматі YYYY-MM-DD. Залиште порожнім, якщо дати немає.",
+    low: "Низький",
+    medium: "Середній",
+    high: "Високий",
+    taskUpdated: "Завдання оновлено.",
+    sessionEnded: "Сеанс завершився. Будь ласка, увійдіть знову.",
+    pleaseLogInFirst: "Спочатку увійдіть у систему.",
+    requestFailed: "Помилка запиту.",
+    taskCountSingular: "{count} завдання",
+    taskCountPlural: "{count} завдань",
+    activeCount: "активних: {count}",
+  },
+};
 
 // The browser keeps a copy of the server data in this array while the page is open.
 let tasks = [];
 let currentFilter = "all";
 let currentUser = null;
 let authMode = "login";
+let currentLanguage = getStoredLanguage();
 
+languageSelect.value = currentLanguage;
+applyTranslations();
 setAuthMode("login");
 checkSession();
+
+languageSelect.addEventListener("change", function () {
+  currentLanguage = languageSelect.value;
+  localStorage.setItem(languageStorageKey, currentLanguage);
+  applyTranslations();
+  renderTasks();
+});
 
 authModeButtons.forEach(function (button) {
   button.addEventListener("click", function () {
@@ -47,7 +219,7 @@ authForm.addEventListener("submit", async function (event) {
   const password = authPasswordInput.value;
 
   if (username === "" || password === "") {
-    showAuthStatus("Please enter both a username and password.");
+    showAuthStatus(t("enterUsernameAndPassword"));
     return;
   }
 
@@ -66,13 +238,13 @@ authForm.addEventListener("submit", async function (event) {
     const responseData = await response.json();
 
     if (!response.ok) {
-      throw new Error(responseData.error || "Authentication failed.");
+      throw new Error(responseData.error || t("authenticationFailed"));
     }
 
     currentUser = responseData.user;
     authForm.reset();
     showTodoSection();
-    showTaskStatus(responseData.message);
+    showTaskStatus(authMode === "register" ? t("registerSuccess") : t("loginSuccess"));
     await loadTasks();
   } catch (error) {
     showAuthStatus(error.message);
@@ -86,16 +258,16 @@ logoutButton.addEventListener("click", async function () {
     });
 
     if (!response.ok) {
-      throw new Error("Could not log out.");
+      throw new Error(t("couldNotLogOut"));
     }
 
     currentUser = null;
     tasks = [];
     todoForm.reset();
     renderTasks();
-    showAuthSection("You have been logged out.");
+    showAuthSection(t("loggedOut"));
   } catch (error) {
-    showTaskStatus("The server could not log you out.");
+    showTaskStatus(t("serverCouldNotLogYouOut"));
   }
 });
 
@@ -108,13 +280,13 @@ todoForm.addEventListener("submit", async function (event) {
   const dueDate = dueDateInput.value;
 
   if (taskText === "") {
-    showTaskStatus("Please enter a task before adding it.");
+    showTaskStatus(t("enterTaskBeforeAdding"));
     return;
   }
 
   const newTask = {
     text: taskText,
-    category: category === "" ? "General" : category,
+    category: category === "" ? t("generalCategory") : category,
     priority: priority,
     dueDate: dueDate,
   };
@@ -134,9 +306,9 @@ todoForm.addEventListener("submit", async function (event) {
     todoForm.reset();
     priorityInput.value = "Medium";
     todoInput.focus();
-    showTaskStatus("Task added.");
+    showTaskStatus(t("taskAdded"));
   } catch (error) {
-    showTaskStatus(error.message || "The server could not save the task.");
+    showTaskStatus(error.message || t("serverCouldNotSaveTask"));
   }
 });
 
@@ -154,7 +326,7 @@ clearCompletedButton.addEventListener("click", async function () {
   });
 
   if (completedTasks.length === 0) {
-    showTaskStatus("There are no completed tasks to clear.");
+    showTaskStatus(t("noCompletedTasksToClear"));
     return;
   }
 
@@ -172,9 +344,9 @@ clearCompletedButton.addEventListener("click", async function () {
     });
 
     renderTasks();
-    showTaskStatus("Completed tasks cleared.");
+    showTaskStatus(t("completedTasksCleared"));
   } catch (error) {
-    showTaskStatus(error.message || "The server could not clear completed tasks.");
+    showTaskStatus(error.message || t("serverCouldNotClearCompleted"));
   }
 });
 
@@ -190,14 +362,14 @@ async function checkSession() {
     const responseData = await response.json();
 
     if (!response.ok) {
-      throw new Error("Could not check login status.");
+      throw new Error(t("couldNotCheckLoginStatus"));
     }
 
     currentUser = responseData.user;
     showTodoSection();
     await loadTasks();
   } catch (error) {
-    showAuthSection("The app could not check your login status.");
+    showAuthSection(t("appCouldNotCheckLoginStatus"));
   }
 }
 
@@ -213,7 +385,7 @@ async function loadTasks() {
     tasks = await requestTaskJson(taskApiBaseUrl);
     renderTasks();
   } catch (error) {
-    showTaskStatus(error.message || "The app could not load tasks from the server.");
+    showTaskStatus(error.message || t("appCouldNotLoadTasks"));
   }
 }
 
@@ -255,19 +427,20 @@ function renderTasks() {
 
     const categoryBadge = document.createElement("span");
     categoryBadge.className = "meta-badge";
-    categoryBadge.textContent = "Category: " + task.category;
+    categoryBadge.textContent = t("categoryLabel") + ": " + task.category;
 
     const priorityBadge = document.createElement("span");
     priorityBadge.className =
       "meta-badge priority-" + task.priority.toLowerCase();
-    priorityBadge.textContent = "Priority: " + task.priority;
+    priorityBadge.textContent =
+      t("priorityLabel") + ": " + translatePriority(task.priority);
 
     metaRow.appendChild(categoryBadge);
     metaRow.appendChild(priorityBadge);
 
     const taskDate = document.createElement("p");
     taskDate.className = "todo-date";
-    taskDate.textContent = "Created: " + formatDate(task.createdAt);
+    taskDate.textContent = t("createdLabel") + ": " + formatDate(task.createdAt);
 
     content.appendChild(taskText);
     content.appendChild(metaRow);
@@ -275,7 +448,7 @@ function renderTasks() {
     if (task.dueDate) {
       const dueDate = document.createElement("p");
       dueDate.className = "todo-due-date";
-      dueDate.textContent = "Due: " + formatDueDate(task.dueDate);
+      dueDate.textContent = t("dueLabel") + ": " + formatDueDate(task.dueDate);
       content.appendChild(dueDate);
     }
 
@@ -286,7 +459,7 @@ function renderTasks() {
 
     const completeButton = document.createElement("button");
     completeButton.className = "complete-btn";
-    completeButton.textContent = task.completed ? "Undo" : "Done";
+    completeButton.textContent = task.completed ? t("undo") : t("done");
     completeButton.addEventListener("click", async function () {
       await updateTask(task.id, {
         completed: !task.completed,
@@ -295,14 +468,14 @@ function renderTasks() {
 
     const editButton = document.createElement("button");
     editButton.className = "edit-btn";
-    editButton.textContent = "Edit";
+    editButton.textContent = t("edit");
     editButton.addEventListener("click", async function () {
       await startEditingTask(task);
     });
 
     const deleteButton = document.createElement("button");
     deleteButton.className = "delete-btn";
-    deleteButton.textContent = "Delete";
+    deleteButton.textContent = t("delete");
     deleteButton.addEventListener("click", async function () {
       await deleteTask(task.id);
     });
@@ -354,7 +527,7 @@ async function updateTask(taskId, changes) {
 
     renderTasks();
   } catch (error) {
-    showTaskStatus(error.message || "The server could not update the task.");
+    showTaskStatus(error.message || t("serverCouldNotUpdateTask"));
   }
 }
 
@@ -369,15 +542,15 @@ async function deleteTask(taskId) {
     });
 
     renderTasks();
-    showTaskStatus("Task deleted.");
+    showTaskStatus(t("taskDeleted"));
   } catch (error) {
-    showTaskStatus(error.message || "The server could not delete the task.");
+    showTaskStatus(error.message || t("serverCouldNotDeleteTask"));
   }
 }
 
 async function startEditingTask(task) {
   // prompt() keeps editing simple for a beginner project.
-  const updatedText = prompt("Edit your task text:", task.text);
+  const updatedText = prompt(t("editTaskTextPrompt"), task.text);
 
   if (updatedText === null) {
     return;
@@ -386,29 +559,23 @@ async function startEditingTask(task) {
   const trimmedText = updatedText.trim();
 
   if (trimmedText === "") {
-    showTaskStatus("A task cannot be empty.");
+    showTaskStatus(t("taskCannotBeEmpty"));
     return;
   }
 
-  const updatedCategory = prompt("Edit category:", task.category);
+  const updatedCategory = prompt(t("editCategoryPrompt"), task.category);
 
   if (updatedCategory === null) {
     return;
   }
 
-  const updatedPriority = prompt(
-    "Edit priority: Low, Medium, or High",
-    task.priority
-  );
+  const updatedPriority = prompt(t("editPriorityPrompt"), task.priority);
 
   if (updatedPriority === null) {
     return;
   }
 
-  const updatedDueDate = prompt(
-    "Edit due date in YYYY-MM-DD format. Leave blank for no due date.",
-    task.dueDate
-  );
+  const updatedDueDate = prompt(t("editDueDatePrompt"), task.dueDate);
 
   if (updatedDueDate === null) {
     return;
@@ -416,12 +583,12 @@ async function startEditingTask(task) {
 
   await updateTask(task.id, {
     text: trimmedText,
-    category: updatedCategory.trim() || "General",
+    category: updatedCategory.trim() || t("generalCategory"),
     priority: normalizePriority(updatedPriority),
     dueDate: updatedDueDate.trim(),
   });
 
-  showTaskStatus("Task updated.");
+  showTaskStatus(t("taskUpdated"));
 }
 
 async function requestTaskJson(url, options) {
@@ -431,8 +598,8 @@ async function requestTaskJson(url, options) {
     currentUser = null;
     tasks = [];
     renderTasks();
-    showAuthSection("Your session ended. Please log in again.");
-    throw new Error("Please log in first.");
+    showAuthSection(t("sessionEnded"));
+    throw new Error(t("pleaseLogInFirst"));
   }
 
   if (response.status === 204) {
@@ -442,7 +609,7 @@ async function requestTaskJson(url, options) {
   const responseData = await response.json();
 
   if (!response.ok) {
-    throw new Error(responseData.error || "The request failed.");
+    throw new Error(responseData.error || t("requestFailed"));
   }
 
   return responseData;
@@ -456,15 +623,13 @@ function setAuthMode(nextMode) {
   });
 
   if (nextMode === "register") {
-    authSubmitButton.textContent = "Create Account";
+    authSubmitButton.textContent = t("createAccount");
     authPasswordInput.autocomplete = "new-password";
-    authHelperText.textContent =
-      "Register a new account. Your password must be at least 8 characters long.";
+    authHelperText.textContent = t("authHelperRegister");
   } else {
-    authSubmitButton.textContent = "Login";
+    authSubmitButton.textContent = t("login");
     authPasswordInput.autocomplete = "current-password";
-    authHelperText.textContent =
-      "Log in with your existing account to see your tasks.";
+    authHelperText.textContent = t("authHelperLogin");
   }
 
   hideAuthStatus();
@@ -498,11 +663,11 @@ function showTodoSection() {
 function normalizePriority(priorityText) {
   const cleanedPriority = priorityText.trim().toLowerCase();
 
-  if (cleanedPriority === "high") {
+  if (cleanedPriority === "high" || cleanedPriority === "високий") {
     return "High";
   }
 
-  if (cleanedPriority === "low") {
+  if (cleanedPriority === "low" || cleanedPriority === "низький") {
     return "Low";
   }
 
@@ -515,11 +680,13 @@ function updateTaskCount() {
   });
 
   const totalTasks = tasks.length;
+  const totalTasksLabel =
+    totalTasks === 1
+      ? t("taskCountSingular", { count: totalTasks })
+      : t("taskCountPlural", { count: totalTasks });
+
   taskCount.textContent =
-    totalTasks + " task" + (totalTasks === 1 ? "" : "s") +
-    " | " +
-    activeTasks.length +
-    " active";
+    totalTasksLabel + " | " + t("activeCount", { count: activeTasks.length });
 }
 
 function updateEmptyMessage(filteredTaskCount) {
@@ -527,9 +694,9 @@ function updateEmptyMessage(filteredTaskCount) {
     emptyMessage.classList.remove("hidden");
 
     if (tasks.length === 0) {
-      emptyMessage.textContent = "No tasks yet. Add your first one above.";
+      emptyMessage.textContent = t("emptyMessage");
     } else {
-      emptyMessage.textContent = "No tasks match the current filter.";
+      emptyMessage.textContent = t("noTasksMatchFilter");
     }
 
     return;
@@ -571,7 +738,7 @@ function hideAuthStatus() {
 function formatDate(dateString) {
   const date = new Date(dateString);
 
-  return date.toLocaleString([], {
+  return date.toLocaleString(getLocale(), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -583,9 +750,80 @@ function formatDate(dateString) {
 function formatDueDate(dateString) {
   const date = new Date(dateString + "T00:00:00");
 
-  return date.toLocaleDateString([], {
+  return date.toLocaleDateString(getLocale(), {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+}
+
+function getStoredLanguage() {
+  const savedLanguage = localStorage.getItem(languageStorageKey);
+
+  if (translations[savedLanguage]) {
+    return savedLanguage;
+  }
+
+  return defaultLanguage;
+}
+
+function t(key, replacements) {
+  const currentTranslations = translations[currentLanguage] || translations.en;
+  let text = currentTranslations[key] || translations.en[key] || key;
+
+  if (replacements) {
+    Object.keys(replacements).forEach(function (replacementKey) {
+      text = text.replace(
+        "{" + replacementKey + "}",
+        replacements[replacementKey]
+      );
+    });
+  }
+
+  return text;
+}
+
+function applyTranslations() {
+  document.documentElement.lang = currentLanguage;
+  document.title = t("pageTitle");
+
+  document.querySelectorAll("[data-i18n]").forEach(function (element) {
+    element.textContent = t(element.dataset.i18n);
+  });
+
+  document
+    .querySelectorAll("[data-i18n-placeholder]")
+    .forEach(function (element) {
+      element.placeholder = t(element.dataset.i18nPlaceholder);
+    });
+
+  document
+    .querySelectorAll("[data-i18n-aria-label]")
+    .forEach(function (element) {
+      element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+    });
+
+  setAuthMode(authMode);
+  updateTaskCount();
+  updateEmptyMessage(tasks.length);
+}
+
+function getLocale() {
+  if (currentLanguage === "uk") {
+    return "uk-UA";
+  }
+
+  return "en-US";
+}
+
+function translatePriority(priority) {
+  if (priority === "High") {
+    return t("high");
+  }
+
+  if (priority === "Low") {
+    return t("low");
+  }
+
+  return t("medium");
 }
