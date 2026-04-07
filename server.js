@@ -246,7 +246,7 @@ app.get("/", function (request, response) {
   response.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.listen(port, function () {
+app.listen(PORT, function () {
   console.log("Server running at http://localhost:" + port);
   console.log("Using SQLite database at " + databasePath);
 });
