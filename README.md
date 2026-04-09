@@ -1,134 +1,154 @@
-# Simple To-Do List App With User Accounts
+# Simple To-Do List App With User Accounts And Password Reset
 
-This version of the app adds:
+This project is a beginner-friendly to-do app built with:
+
+- HTML
+- CSS
+- vanilla JavaScript
+- Express
+- SQLite
+- Resend for password reset emails
+
+It supports:
 
 - user registration
-- user login
-- password hashing
-- logout
+- login/logout
 - per-user task privacy
-- SQLite storage for both users and tasks
+- password hashing with `crypto.scryptSync()`
+- password reset tokens with expiration
+- email-based password reset requests
+- a simple frontend flow for resetting a password
 
-The app is still intentionally beginner-friendly:
-plain HTML, CSS, JavaScript, Express, and SQLite.
+## How Password Reset Works
 
-## How It Works
+1. A user enters their email in the `Forgot password?` form.
+2. The app sends that email to `POST /auth/forgot-password`.
+3. The server creates a secure random token with `crypto.randomBytes()`.
+4. The server stores only a hashed version of that token in the `password_resets` table.
+5. The server builds a reset link like `https://your-app-url/?resetToken=...`.
+6. The server sends that link by email through Resend.
+7. The user opens the link from the email.
+8. The frontend reads `?resetToken=...` from the URL and fills in the reset form.
+9. The app sends the token and the new password to `POST /auth/reset-password`.
+10. The server checks the token, checks the expiration time, updates the password, and deletes the token.
 
-### Users
+## Environment Variables
 
-Users are stored in SQLite in a `users` table with:
+The password reset email feature uses these environment variables:
 
-- `id`
-- `username`
-- `password`
+- `RESEND_API_KEY`
+  Your Resend API key.
+- `PASSWORD_RESET_FROM_EMAIL`
+  The sender email address Resend should use, for example `onboarding@resend.dev` while testing.
+- `APP_BASE_URL`
+  The public URL of your app. For local development use `http://localhost:3000`. For Render use your Render URL.
 
-The `password` column does **not** store the plain password.
-It stores a secure salted hash created with Node.js `crypto.scryptSync()`.
+## Local Development Setup
 
-### Tasks
+### 1. Install dependencies
 
-Tasks are still stored in SQLite, but now each task belongs to one user.
-
-The `tasks` table now includes:
-
-- `id`
-- `userId`
-- `text`
-- `category`
-- `priority`
-- `dueDate`
-- `completed`
-- `createdAt`
-
-When a logged-in user loads tasks, the backend only returns rows where:
-
-```sql
-userId = currentLoggedInUserId
+```bash
+cd ~/todo-app
+npm install
 ```
 
-That means Alice cannot see Bob's tasks, and Bob cannot see Alice's tasks.
+### 2. Set your environment variables
 
-### Sessions
+Run these commands in the same terminal before starting the server:
 
-When a user logs in or registers, the server creates a session ID and sends it back in an HTTP-only cookie.
+```bash
+export RESEND_API_KEY="re_your_real_api_key"
+export PASSWORD_RESET_FROM_EMAIL="onboarding@resend.dev"
+export APP_BASE_URL="http://localhost:3000"
+```
 
-For this beginner project:
+Notes:
 
-- users are saved permanently in SQLite
-- tasks are saved permanently in SQLite
-- sessions are stored in server memory
+- `onboarding@resend.dev` is useful for first tests in Resend.
+- If you use your own domain in Resend, replace the sender email with your verified address.
+- The app does not read a `.env` file automatically. It reads variables from `process.env`.
 
-So if you restart the server, users and tasks stay saved, but users need to log in again.
+### 3. Start the server
+
+```bash
+npm start
+```
+
+You should see logs similar to:
+
+```text
+Server running at http://localhost:3000
+Using SQLite database at /full/path/to/todo.db
+Password reset links use base URL: http://localhost:3000
+```
+
+### 4. Open the app
+
+Visit:
+
+```text
+http://localhost:3000
+```
+
+## Render Deployment Setup
+
+In your Render service:
+
+1. Open the service dashboard.
+2. Go to `Environment`.
+3. Add these variables:
+   `RESEND_API_KEY`
+   Your real Resend API key.
+   `PASSWORD_RESET_FROM_EMAIL`
+   Your verified sender address in Resend.
+   `APP_BASE_URL`
+   Your public Render URL, for example `https://todo-app-example.onrender.com`
+4. Save the changes.
+5. Redeploy the service.
+
+Important:
+
+- `APP_BASE_URL` should match the real public URL users open in the browser.
+- If you leave `APP_BASE_URL` unset on Render, reset emails may contain a localhost link, which is wrong for production.
+- Your sender email must be allowed by your Resend account.
 
 ## What Changed In Each File
 
 ### `server.js`
 
-This file changed the most.
-
-- Added a `users` table in SQLite.
-- Updated the `tasks` table so each task has a `userId`.
-- Added a small database migration so older task tables get a new `userId` column.
-- Added `POST /auth/register`.
-- Added `POST /auth/login`.
-- Added `GET /auth/me`.
-- Added `POST /auth/logout`.
-- Added password hashing with Node's built-in `crypto` module using `scrypt`.
-- Added simple cookie-based sessions.
-- Added `requireAuth()` so task routes only work for logged-in users.
-- Updated all task queries so they only read, update, and delete tasks for the current user.
-- Kept comments simple so the flow is easy to follow.
-
-### `index.html`
-
-- Added a login/register card at the top of the page.
-- Added buttons to switch between login mode and register mode.
-- Added username and password fields.
-- Added a logout button.
-- Wrapped the task UI in a separate section that only shows after login.
-- Kept the frontend layout simple and clean.
+- Added the `resend` import and created a small Resend client from `RESEND_API_KEY`.
+- Kept the existing password reset flow:
+  token generation,
+  token hashing,
+  token storage,
+  expiration checking,
+  and password update logic all stay the same.
+- Replaced the password reset console log with a real `sendPasswordResetEmail()` helper.
+- Added `PASSWORD_RESET_FROM_EMAIL` and `APP_BASE_URL` support through environment variables.
+- Added `buildPasswordResetLink()` so the email link uses the correct local or Render URL.
+- Added a configuration check so the server gives a clear error if email variables are missing.
+- Added a small cleanup step that deletes the saved reset token if email sending fails.
 
 ### `script.js`
 
-- Added authentication state with `currentUser`.
-- Added `checkSession()` so the page can detect whether the user is already logged in.
-- Added login and registration requests with `fetch()`.
-- Added logout handling.
-- Added `showAuthSection()` and `showTodoSection()` to switch the visible UI.
-- Updated task loading so tasks only load after a user is authenticated.
-- Added automatic handling for `401 Unauthorized` responses.
-- Kept the task features:
-  add, edit, complete, filter, delete, and clear completed.
-
-### `style.css`
-
-- Added styles for the new auth card.
-- Added styles for the login/register toggle buttons.
-- Added styles for the session bar and logout button.
-- Kept the original simple card layout and color palette.
-- Made sure the page still works on smaller screens.
-
-### `README.md`
-
-- Rewritten to explain the new authentication system.
-- Added a file-by-file change summary.
-- Added updated run instructions.
-- Added step-by-step testing instructions.
-
-### `todo.db`
-
-- Still stores the app data in SQLite.
-- Now stores both users and tasks.
-- Existing old tasks without a `userId` will stay in the database, but they are not shown to logged-in users because they are not linked to an account.
+- Updated the success message after `Forgot password?`.
+- The frontend now tells the user that a password reset email was sent instead of telling them to check the server console.
+- The reset forms and reset-token URL handling stay the same.
 
 ### `package.json`
 
-- No new package was needed for password hashing because the app uses Node's built-in `crypto` module.
-- The app still starts with:
+- Added the `resend` dependency.
 
-```bash
-npm start
-```
+### `package-lock.json`
+
+- Updated automatically when `resend` was installed.
+
+### `README.md`
+
+- Replaced the old console-log instructions with real email setup instructions.
+- Added local setup steps for environment variables.
+- Added Render deployment setup instructions.
+- Added exact end-to-end testing steps for the full email-based reset flow.
 
 ## Database Tables
 
@@ -138,9 +158,12 @@ npm start
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE,
-  password TEXT NOT NULL
+  password TEXT NOT NULL,
+  email TEXT
 )
 ```
+
+The app also creates a unique index for non-null emails on startup.
 
 ### `tasks`
 
@@ -158,183 +181,160 @@ CREATE TABLE IF NOT EXISTS tasks (
 )
 ```
 
-## Step By Step: Run The App
+### `password_resets`
 
-### 1. Open the project folder
-
-```bash
-cd ~/todo-app
+```sql
+CREATE TABLE IF NOT EXISTS password_resets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  token TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)
 ```
 
-If your folder is somewhere else, use that path instead.
+The `token` column stores a hashed token, not the plain token from the email link.
 
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Start the server
-
-```bash
-npm start
-```
-
-You should see output like:
-
-```text
-Server running at http://localhost:3000
-Using SQLite database at /full/path/to/todo.db
-```
-
-### 4. Open the app in your browser
-
-Go to:
-
-```text
-http://localhost:3000
-```
-
-### 5. Register a new account
-
-1. Click `Register`.
-2. Enter a username.
-3. Enter a password with at least 8 characters.
-4. Click `Create Account`.
-
-After registration, the app logs you in automatically.
-
-### 6. Add a few tasks
-
-1. Enter a task.
-2. Optionally choose a category, priority, and due date.
-3. Click `Add Task`.
-
-### 7. Log out
-
-Click `Logout`.
-
-### 8. Log in again
-
-1. Click `Login`.
-2. Enter the same username and password.
-3. Click `Login`.
-
-Your tasks should still be there because they are saved in SQLite.
-
-### 9. Stop the server
-
-Press:
-
-```bash
-Ctrl + C
-```
-
-### 10. Start it again later
-
-```bash
-npm start
-```
-
-Users and tasks remain saved in `todo.db`.
-Sessions do not remain saved, so users log in again after a restart.
-
-## Step By Step: Test Everything
-
-Use these manual tests in the browser.
-
-### Test 1: Registration works
-
-1. Open the app.
-2. Click `Register`.
-3. Create a new account.
-4. Confirm that the task area appears after registration.
-
-Expected result:
-the account is created and you are logged in.
-
-### Test 2: Login works
-
-1. Click `Logout`.
-2. Switch to `Login`.
-3. Enter the same username and password.
-4. Click `Login`.
-
-Expected result:
-you return to your task list.
-
-### Test 3: Password rules work
-
-1. Click `Register`.
-2. Try a password shorter than 8 characters.
-
-Expected result:
-the app shows an error and does not create the account.
-
-### Test 4: Duplicate usernames are blocked
-
-1. Try registering the same username twice.
-
-Expected result:
-the app shows a message that the username is already taken.
-
-### Test 5: Each user only sees their own tasks
-
-1. Register user A and create tasks.
-2. Log out.
-3. Register user B.
-4. Check the task list.
-
-Expected result:
-user B should not see user A's tasks.
-
-### Test 6: Task features still work
-
-While logged in:
-
-1. Add a task.
-2. Edit a task.
-3. Mark a task complete.
-4. Filter by `All`, `Active`, and `Completed`.
-5. Delete a task.
-6. Use `Clear Completed`.
-
-Expected result:
-all task actions still work as before, but only for the logged-in user.
-
-### Test 7: Logout blocks task access
-
-1. Log out.
-2. Try to use the task section again.
-
-Expected result:
-the app returns to the login/register screen and requires login again.
-
-### Test 8: Data survives a server restart
-
-1. Create an account and add tasks.
-2. Stop the server.
-3. Start the server again.
-4. Log in again.
-
-Expected result:
-the account and tasks are still saved.
-
-## Quick Backend Route Summary
-
-### Auth routes
+## Auth Routes
 
 - `POST /auth/register`
 - `POST /auth/login`
 - `GET /auth/me`
 - `POST /auth/logout`
+- `POST /auth/forgot-password`
+- `POST /auth/reset-password`
 
-### Task routes
+## Task Routes
 
 - `GET /tasks`
 - `POST /tasks`
 - `PUT /tasks/:id`
 - `DELETE /tasks/:id`
 
-All task routes now require a logged-in user.
-# todo-app
+## Exactly How To Test The Full Password Reset Flow
+
+### 1. Start with working email configuration
+
+Before testing, make sure the server was started with:
+
+```bash
+export RESEND_API_KEY="re_your_real_api_key"
+export PASSWORD_RESET_FROM_EMAIL="onboarding@resend.dev"
+export APP_BASE_URL="http://localhost:3000"
+npm start
+```
+
+### 2. Register a user
+
+1. Open `http://localhost:3000`
+2. Click `Register`
+3. Enter:
+   username: `testuser`
+   email: an email inbox you can actually open
+   password: `password123`
+4. Click `Create Account`
+5. Confirm that the app logs you in
+
+### 3. Log out
+
+1. Click `Logout`
+2. Confirm you are back on the auth screen
+
+### 4. Request the reset email
+
+1. Click `Forgot password?`
+2. Enter the same email you used for registration
+3. Click `Send Reset Link`
+4. Confirm the page shows the generic success message
+
+Expected result:
+
+- the browser should not show the reset link directly
+- the email should arrive in the inbox for that address
+
+### 5. Open the reset email
+
+1. Open the inbox for the email address you used
+2. Find the message with subject `Reset your todo app password`
+3. Click the reset link inside the email
+
+Expected result:
+
+- the browser opens your app
+- the URL contains `?resetToken=...`
+- the password reset panel is open
+- the token field is already filled in
+
+### 6. Submit the new password
+
+1. In the reset form, enter a new password such as `newpassword123`
+2. Click `Reset Password`
+
+Expected result:
+
+- the app shows a success message
+- the app returns to login mode
+
+### 7. Log in with the new password
+
+1. Enter the same username as before
+2. Enter the new password
+3. Click `Login`
+
+Expected result:
+
+- login works
+
+### 8. Confirm the old password no longer works
+
+1. Click `Logout`
+2. Try to log in with the old password `password123`
+
+Expected result:
+
+- login fails with an authentication error
+
+### 9. Confirm the reset token cannot be reused
+
+1. Open the same reset link from the email again
+2. Try to reset the password a second time
+
+Expected result:
+
+- the app shows an error saying the token is invalid or expired
+
+## Extra Manual Checks
+
+### Missing email configuration
+
+1. Stop the server
+2. Start it without `RESEND_API_KEY` or without `PASSWORD_RESET_FROM_EMAIL`
+3. Request a password reset
+
+Expected result:
+
+- the server returns a clear error that email sending is not configured
+
+### Invalid email on registration
+
+1. Click `Register`
+2. Enter an invalid email such as `test`
+3. Submit the form
+
+Expected result:
+
+- the server rejects the request with an error
+
+### Duplicate email
+
+1. Register one account with an email
+2. Try to register another account with the same email
+
+Expected result:
+
+- the server rejects the second registration
+
+### Expired token
+
+The app creates reset tokens that last for 1 hour.
+To test expiration manually, wait until the token expires or temporarily shorten `passwordResetLifetimeMs` in `server.js`.

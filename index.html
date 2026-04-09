@@ -30,50 +30,147 @@
       </header>
 
       <section id="auth-section" class="auth-card">
-        <div
-          class="auth-toggle"
-          aria-label="Choose login or registration"
-          data-i18n-aria-label="authToggleAria"
-        >
-          <button type="button" class="auth-toggle-btn active" data-mode="login">
-            <span data-i18n="login">Login</span>
-          </button>
-          <button type="button" class="auth-toggle-btn" data-mode="register">
-            <span data-i18n="register">Register</span>
+        <div id="auth-main-view">
+          <div
+            class="auth-toggle"
+            aria-label="Choose login or registration"
+            data-i18n-aria-label="authToggleAria"
+          >
+            <button type="button" class="auth-toggle-btn active" data-mode="login">
+              <span data-i18n="login">Login</span>
+            </button>
+            <button type="button" class="auth-toggle-btn" data-mode="register">
+              <span data-i18n="register">Register</span>
+            </button>
+          </div>
+
+          <form class="auth-form" id="auth-form">
+            <label
+              class="field-label"
+              for="auth-username-input"
+              data-i18n="usernameLabel"
+              >Username</label
+            >
+            <input
+              type="text"
+              id="auth-username-input"
+              placeholder="Choose a username"
+              data-i18n-placeholder="usernamePlaceholder"
+              autocomplete="username"
+            />
+
+            <div id="auth-email-group" class="hidden">
+              <label
+                class="field-label"
+                for="auth-email-input"
+                data-i18n="emailLabel"
+                >Email</label
+              >
+              <input
+                type="email"
+                id="auth-email-input"
+                placeholder="Enter your email address"
+                data-i18n-placeholder="emailPlaceholder"
+                autocomplete="email"
+              />
+            </div>
+
+            <label
+              class="field-label"
+              for="auth-password-input"
+              data-i18n="passwordLabel"
+              >Password</label
+            >
+            <input
+              type="password"
+              id="auth-password-input"
+              placeholder="Use at least 8 characters"
+              data-i18n-placeholder="passwordPlaceholder"
+              autocomplete="current-password"
+            />
+
+            <button type="submit" id="auth-submit-btn">Login</button>
+          </form>
+
+          <button
+            type="button"
+            id="show-forgot-password-btn"
+            class="text-link-button"
+            data-i18n="forgotPassword"
+          >
+            Forgot password?
           </button>
         </div>
 
-        <form class="auth-form" id="auth-form">
-          <label
-            class="field-label"
-            for="auth-username-input"
-            data-i18n="usernameLabel"
-            >Username</label
+        <section id="password-reset-panel" class="password-reset-panel hidden">
+          <h2 class="panel-title" data-i18n="resetPasswordTitle">Reset Password</h2>
+          <p
+            id="reset-password-helper-text"
+            class="reset-password-helper"
+            data-i18n="resetPasswordHelper"
           >
-          <input
-            type="text"
-            id="auth-username-input"
-            placeholder="Choose a username"
-            data-i18n-placeholder="usernamePlaceholder"
-            autocomplete="username"
-          />
+            Enter your account email to get a reset link, then open that link to
+            choose a new password.
+          </p>
 
-          <label
-            class="field-label"
-            for="auth-password-input"
-            data-i18n="passwordLabel"
-            >Password</label
-          >
-          <input
-            type="password"
-            id="auth-password-input"
-            placeholder="Use at least 8 characters"
-            data-i18n-placeholder="passwordPlaceholder"
-            autocomplete="current-password"
-          />
+          <form id="forgot-password-form" class="auth-form">
+            <label
+              class="field-label"
+              for="forgot-email-input"
+              data-i18n="forgotPasswordEmailLabel"
+              >Email</label
+            >
+            <input
+              type="email"
+              id="forgot-email-input"
+              placeholder="Enter your account email"
+              data-i18n-placeholder="forgotPasswordEmailPlaceholder"
+              autocomplete="email"
+            />
 
-          <button type="submit" id="auth-submit-btn">Login</button>
-        </form>
+            <button type="submit" data-i18n="sendResetLink">
+              Send Reset Link
+            </button>
+          </form>
+
+          <form id="reset-password-form" class="auth-form hidden">
+            <label
+              class="field-label"
+              for="reset-password-input"
+              data-i18n="newPasswordLabel"
+              >New Password</label
+            >
+            <input
+              type="password"
+              id="reset-password-input"
+              placeholder="Enter your new password"
+              data-i18n-placeholder="newPasswordPlaceholder"
+              autocomplete="new-password"
+            />
+
+            <label
+              class="field-label"
+              for="confirm-reset-password-input"
+              data-i18n="confirmNewPasswordLabel"
+              >Confirm New Password</label
+            >
+            <input
+              type="password"
+              id="confirm-reset-password-input"
+              placeholder="Enter the same password again"
+              data-i18n-placeholder="confirmNewPasswordPlaceholder"
+              autocomplete="new-password"
+            />
+
+            <button
+              type="submit"
+              id="reset-password-submit-btn"
+              data-i18n="resetPasswordButton"
+            >
+              Reset Password
+            </button>
+          </form>
+        </section>
 
         <p id="auth-helper-text" class="auth-helper">
           Log in with your existing account to see your tasks.

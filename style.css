@@ -141,7 +141,11 @@ h1 {
 }
 
 #auth-username-input,
+#auth-email-input,
 #auth-password-input,
+#forgot-email-input,
+#reset-password-input,
+#confirm-reset-password-input,
 #todo-input,
 #category-input,
 #priority-input,
@@ -160,7 +164,11 @@ h1 {
 }
 
 #auth-username-input:focus,
+#auth-email-input:focus,
 #auth-password-input:focus,
+#forgot-email-input:focus,
+#reset-password-input:focus,
+#confirm-reset-password-input:focus,
 #todo-input:focus,
 #category-input:focus,
 #priority-input:focus,
@@ -201,8 +209,46 @@ button:active {
   background: var(--primary-dark);
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
+}
+
 .auth-helper {
   margin: 14px 0 0;
+  color: var(--muted-color);
+  line-height: 1.5;
+}
+
+.text-link-button {
+  margin-top: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.text-link-button:hover {
+  color: var(--primary-dark);
+}
+
+.password-reset-panel {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-color);
+}
+
+.panel-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.reset-password-helper {
+  margin: 0 0 14px;
   color: var(--muted-color);
   line-height: 1.5;
 }

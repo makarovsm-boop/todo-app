@@ -1,12 +1,21 @@
+require("dotenv").config();
 const crypto = require("crypto");
 const express = require("express");
 const path = require("path");
 const Database = require("better-sqlite3");
+const { Resend } = require("resend");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const databasePath = path.join(__dirname, "todo.db");
 const sessionCookieName = "todo_session";
+const passwordResetLifetimeMs = 60 * 60 * 1000;
+const resendApiKey = String(process.env.RESEND_API_KEY || "").trim();
+const passwordResetSenderEmail = String(
+  process.env.PASSWORD_RESET_FROM_EMAIL || ""
+).trim();
+const appBaseUrl = getAppBaseUrl();
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 // Opening the database file will create it if it does not exist yet.
 const db = new Database(databasePath);
@@ -23,11 +32,19 @@ setupDatabase();
 
 app.post("/auth/register", function (request, response) {
   const username = normalizeUsername(request.body.username);
+  const email = normalizeEmail(request.body.email);
   const password = normalizePassword(request.body.password);
 
   if (username.length < 3) {
     response.status(400).json({
       error: "Username must be at least 3 characters long.",
+    });
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    response.status(400).json({
+      error: "Please enter a valid email address.",
     });
     return;
   }
@@ -50,18 +67,29 @@ app.post("/auth/register", function (request, response) {
     return;
   }
 
+  const existingEmailUser = db
+    .prepare("SELECT id FROM users WHERE email = ?")
+    .get(email);
+
+  if (existingEmailUser) {
+    response.status(409).json({
+      error: "That email address is already in use.",
+    });
+    return;
+  }
+
   const passwordHash = hashPassword(password);
   const result = db
     .prepare(
       `
-        INSERT INTO users (username, password)
-        VALUES (?, ?)
+        INSERT INTO users (username, email, password)
+        VALUES (?, ?, ?)
       `
     )
-    .run(username, passwordHash);
+    .run(username, email, passwordHash);
 
   const createdUser = db
-    .prepare("SELECT id, username FROM users WHERE id = ?")
+    .prepare("SELECT id, username, email FROM users WHERE id = ?")
     .get(result.lastInsertRowid);
 
   createSession(response, createdUser.id);
@@ -69,6 +97,134 @@ app.post("/auth/register", function (request, response) {
   response.status(201).json({
     message: "Account created successfully.",
     user: createdUser,
+  });
+});
+
+app.post("/auth/forgot-password", async function (request, response) {
+  const email = normalizeEmail(request.body.email);
+
+  if (!isValidEmail(email)) {
+    response.status(400).json({
+      error: "Please enter a valid email address.",
+    });
+    return;
+  }
+
+  const user = db
+    .prepare("SELECT id, email FROM users WHERE email = ?")
+    .get(email);
+
+  // This message stays the same even when the email does not exist.
+  // It avoids revealing which emails belong to real accounts.
+  const genericMessage =
+    "If that email exists, a password reset email has been sent.";
+
+  if (!isPasswordResetEmailConfigured()) {
+    response.status(500).json({
+      error:
+        "Password reset email is not configured on the server yet. Add the email environment variables and try again.",
+    });
+    return;
+  }
+
+  if (!user) {
+    response.json({
+      message: genericMessage,
+    });
+    return;
+  }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedResetToken = hashResetToken(resetToken);
+  const expiresAt = new Date(Date.now() + passwordResetLifetimeMs).toISOString();
+
+  // Keep only the latest reset token per user to keep the beginner flow simple.
+  db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(user.id);
+
+  db.prepare(
+    `
+      INSERT INTO password_resets (user_id, token, expires_at)
+      VALUES (?, ?, ?)
+    `
+  ).run(user.id, hashedResetToken, expiresAt);
+
+  const resetLink = buildPasswordResetLink(resetToken);
+
+  try {
+    await sendPasswordResetEmail(user.email, resetLink, expiresAt);
+
+    response.json({
+      message: genericMessage,
+    });
+  } catch (error) {
+    // If sending fails, remove the saved token so the next request starts cleanly.
+    db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(user.id);
+
+    console.error("Could not send password reset email.");
+    console.error(error);
+
+    response.status(500).json({
+      error:
+        "The server could not send the password reset email. Please try again.",
+    });
+  }
+});
+
+app.post("/auth/reset-password", function (request, response) {
+  const token = normalizeResetToken(request.body.token);
+  const newPassword = normalizePassword(request.body.password);
+
+  if (token === "") {
+    response.status(400).json({
+      error: "Reset token is required.",
+    });
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    response.status(400).json({
+      error: "Password must be at least 8 characters long.",
+    });
+    return;
+  }
+
+  deleteExpiredPasswordResetTokens();
+
+  const resetRow = db
+    .prepare(
+      `
+        SELECT id, user_id, expires_at
+        FROM password_resets
+        WHERE token = ?
+      `
+    )
+    .get(hashResetToken(token));
+
+  if (!resetRow) {
+    response.status(400).json({
+      error: "That reset token is invalid or has expired.",
+    });
+    return;
+  }
+
+  if (new Date(resetRow.expires_at).getTime() < Date.now()) {
+    db.prepare("DELETE FROM password_resets WHERE id = ?").run(resetRow.id);
+    response.status(400).json({
+      error: "That reset token is invalid or has expired.",
+    });
+    return;
+  }
+
+  const passwordHash = hashPassword(newPassword);
+
+  db.prepare("UPDATE users SET password = ? WHERE id = ?").run(
+    passwordHash,
+    resetRow.user_id
+  );
+  db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(resetRow.user_id);
+
+  response.json({
+    message: "Password reset successfully. You can now log in.",
   });
 });
 
@@ -249,6 +405,13 @@ app.get("/", function (request, response) {
 app.listen(PORT, function () {
   console.log("Server running at http://localhost:" + PORT);
   console.log("Using SQLite database at " + databasePath);
+  console.log("Password reset links use base URL: " + appBaseUrl);
+
+  if (!isPasswordResetEmailConfigured()) {
+    console.log(
+      "Password reset email is not configured yet. Set RESEND_API_KEY and PASSWORD_RESET_FROM_EMAIL."
+    );
+  }
 });
 
 function setupDatabase() {
@@ -256,7 +419,8 @@ function setupDatabase() {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
+      password TEXT NOT NULL,
+      email TEXT
     )
   `);
 
@@ -274,7 +438,20 @@ function setupDatabase() {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   addUserIdColumnIfMissing();
+  addEmailColumnIfMissing();
+  createPasswordResetIndexes();
+  deleteExpiredPasswordResetTokens();
 }
 
 function addUserIdColumnIfMissing() {
@@ -286,6 +463,35 @@ function addUserIdColumnIfMissing() {
   if (!hasUserIdColumn) {
     db.exec("ALTER TABLE tasks ADD COLUMN userId INTEGER");
   }
+}
+
+function addEmailColumnIfMissing() {
+  const userColumns = db.prepare("PRAGMA table_info(users)").all();
+  const hasEmailColumn = userColumns.some(function (column) {
+    return column.name === "email";
+  });
+
+  if (!hasEmailColumn) {
+    db.exec("ALTER TABLE users ADD COLUMN email TEXT");
+  }
+
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique
+    ON users(email)
+    WHERE email IS NOT NULL
+  `);
+}
+
+function createPasswordResetIndexes() {
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS password_resets_token_unique
+    ON password_resets(token)
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS password_resets_user_id_index
+    ON password_resets(user_id)
+  `);
 }
 
 function requireAuth(request, response, next) {
@@ -316,7 +522,7 @@ function getAuthenticatedUser(request) {
   }
 
   const user = db
-    .prepare("SELECT id, username FROM users WHERE id = ?")
+    .prepare("SELECT id, username, email FROM users WHERE id = ?")
     .get(userId);
 
   if (!user) {
@@ -399,6 +605,32 @@ function normalizePassword(password) {
   return String(password || "");
 }
 
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function normalizeResetToken(token) {
+  return String(token || "").trim();
+}
+
+function getAppBaseUrl() {
+  const configuredUrl = String(process.env.APP_BASE_URL || "").trim();
+
+  if (configuredUrl !== "") {
+    return configuredUrl.replace(/\/+$/, "");
+  }
+
+  return "http://localhost:" + PORT;
+}
+
+function isValidEmail(email) {
+  if (email === "") {
+    return false;
+  }
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
   const hashedPassword = crypto.scryptSync(password, salt, 64).toString("hex");
@@ -426,4 +658,55 @@ function verifyPassword(password, storedPassword) {
     savedHashBuffer,
     derivedHashBuffer
   );
+}
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function deleteExpiredPasswordResetTokens() {
+  db.prepare("DELETE FROM password_resets WHERE expires_at <= ?").run(
+    new Date().toISOString()
+  );
+}
+
+function isPasswordResetEmailConfigured() {
+  return Boolean(resend && passwordResetSenderEmail);
+}
+
+async function sendPasswordResetEmail(email, resetLink, expiresAt) {
+  const expirationDate = new Date(expiresAt).toLocaleString();
+
+  // Keep the email content simple and easy to change for beginners.
+  const emailText =
+    "You asked to reset your password for the todo app.\n\n" +
+    "Open this link to choose a new password:\n" +
+    resetLink +
+    "\n\n" +
+    "This link expires at " +
+    expirationDate +
+    ".\n\n" +
+    "If you did not request this, you can ignore this email.";
+
+  const emailHtml =
+    "<p>You asked to reset your password for the todo app.</p>" +
+    '<p><a href="' +
+    resetLink +
+    '">Click here to reset your password</a></p>' +
+    "<p>This link expires at " +
+    expirationDate +
+    ".</p>" +
+    "<p>If you did not request this, you can ignore this email.</p>";
+
+  await resend.emails.send({
+    from: passwordResetSenderEmail,
+    to: email,
+    subject: "Reset your todo app password",
+    text: emailText,
+    html: emailHtml,
+  });
+}
+
+function buildPasswordResetLink(resetToken) {
+  return appBaseUrl + "/?resetToken=" + encodeURIComponent(resetToken);
 }

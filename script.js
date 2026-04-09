@@ -1,12 +1,32 @@
 const authSection = document.getElementById("auth-section");
 const todoSection = document.getElementById("todo-section");
+const authMainView = document.getElementById("auth-main-view");
 const authForm = document.getElementById("auth-form");
 const authUsernameInput = document.getElementById("auth-username-input");
+const authEmailGroup = document.getElementById("auth-email-group");
+const authEmailInput = document.getElementById("auth-email-input");
 const authPasswordInput = document.getElementById("auth-password-input");
 const authSubmitButton = document.getElementById("auth-submit-btn");
 const authHelperText = document.getElementById("auth-helper-text");
 const authStatusMessage = document.getElementById("auth-status-message");
 const authModeButtons = document.querySelectorAll(".auth-toggle-btn");
+const showForgotPasswordButton = document.getElementById(
+  "show-forgot-password-btn"
+);
+const passwordResetPanel = document.getElementById("password-reset-panel");
+const resetPasswordHelperText = document.getElementById(
+  "reset-password-helper-text"
+);
+const forgotPasswordForm = document.getElementById("forgot-password-form");
+const forgotEmailInput = document.getElementById("forgot-email-input");
+const resetPasswordForm = document.getElementById("reset-password-form");
+const resetPasswordInput = document.getElementById("reset-password-input");
+const confirmResetPasswordInput = document.getElementById(
+  "confirm-reset-password-input"
+);
+const resetPasswordSubmitButton = document.getElementById(
+  "reset-password-submit-btn"
+);
 const currentUserLabel = document.getElementById("current-user");
 const logoutButton = document.getElementById("logout-btn");
 const languageSelect = document.getElementById("language-select");
@@ -39,8 +59,24 @@ const translations = {
     register: "Register",
     usernameLabel: "Username",
     usernamePlaceholder: "Choose a username",
+    emailLabel: "Email",
+    emailPlaceholder: "Enter your email address",
     passwordLabel: "Password",
     passwordPlaceholder: "Use at least 8 characters",
+    forgotPassword: "Forgot password?",
+    resetPasswordTitle: "Reset Password",
+    resetPasswordHelper:
+      "Enter your account email to get a reset link, then open that link to choose a new password.",
+    forgotPasswordStepMessage:
+      "Enter your email address and we will send you a reset link.",
+    forgotPasswordEmailLabel: "Email",
+    forgotPasswordEmailPlaceholder: "Enter your account email",
+    sendResetLink: "Send Reset Link",
+    newPasswordLabel: "New Password",
+    newPasswordPlaceholder: "Enter your new password",
+    confirmNewPasswordLabel: "Confirm New Password",
+    confirmNewPasswordPlaceholder: "Enter the same password again",
+    resetPasswordButton: "Reset Password",
     loggedInAs: "Logged in as",
     logout: "Logout",
     taskPlaceholder: "What do you need to do?",
@@ -61,8 +97,17 @@ const translations = {
     createAccount: "Create Account",
     authHelperLogin: "Log in with your existing account to see your tasks.",
     authHelperRegister:
-      "Register a new account. Your password must be at least 8 characters long.",
+      "Register a new account with a username, email, and password.",
     enterUsernameAndPassword: "Please enter both a username and password.",
+    enterUsernameEmailAndPassword:
+      "Please enter a username, email, and password.",
+    enterEmailForReset: "Please enter your email address first.",
+    openResetLinkFirst:
+      "Open the reset link from your email first, then choose a new password.",
+    enterNewPasswordAndConfirmation:
+      "Enter your new password and confirm it.",
+    passwordTooShort: "Your new password must be at least 8 characters long.",
+    passwordsDoNotMatch: "The two password fields must match.",
     authenticationFailed: "Authentication failed.",
     couldNotLogOut: "Could not log out.",
     loggedOut: "You have been logged out.",
@@ -104,6 +149,19 @@ const translations = {
     taskCountSingular: "{count} task",
     taskCountPlural: "{count} tasks",
     activeCount: "{count} active",
+    forgotPasswordSent:
+      "If that email exists, a reset email is on the way.",
+    passwordResetReady:
+      "Reset link detected. Enter your new password below.",
+    resetPasswordStepMessage:
+      "Choose a new password for your account.",
+    passwordResetSuccess: "Password successfully updated",
+    passwordResetFailed: "Invalid or expired reset link",
+    passwordResetEmailNotConfigured:
+      "Password reset email is not set up on the server yet.",
+    passwordResetEmailSendFailed:
+      "The reset email could not be sent right now. Please try again.",
+    resetPasswordSubmitting: "Updating...",
   },
   uk: {
     pageTitle: "Простий список справ",
@@ -117,8 +175,24 @@ const translations = {
     register: "Реєстрація",
     usernameLabel: "Ім'я користувача",
     usernamePlaceholder: "Виберіть ім'я користувача",
+    emailLabel: "Електронна пошта",
+    emailPlaceholder: "Введіть адресу електронної пошти",
     passwordLabel: "Пароль",
     passwordPlaceholder: "Використайте щонайменше 8 символів",
+    forgotPassword: "Забули пароль?",
+    resetPasswordTitle: "Скидання пароля",
+    resetPasswordHelper:
+      "Введіть пошту акаунта, щоб отримати посилання, а потім відкрийте його, щоб вибрати новий пароль.",
+    forgotPasswordStepMessage:
+      "Введіть адресу електронної пошти, і ми надішлемо посилання для скидання.",
+    forgotPasswordEmailLabel: "Електронна пошта",
+    forgotPasswordEmailPlaceholder: "Введіть пошту акаунта",
+    sendResetLink: "Надіслати посилання",
+    newPasswordLabel: "Новий пароль",
+    newPasswordPlaceholder: "Введіть новий пароль",
+    confirmNewPasswordLabel: "Підтвердьте новий пароль",
+    confirmNewPasswordPlaceholder: "Введіть той самий пароль ще раз",
+    resetPasswordButton: "Скинути пароль",
     loggedInAs: "Увійшли як",
     logout: "Вийти",
     taskPlaceholder: "Що вам потрібно зробити?",
@@ -139,8 +213,17 @@ const translations = {
     createAccount: "Створити акаунт",
     authHelperLogin: "Увійдіть у свій акаунт, щоб побачити завдання.",
     authHelperRegister:
-      "Зареєструйте новий акаунт. Пароль має містити щонайменше 8 символів.",
+      "Зареєструйте новий акаунт з іменем, поштою та паролем.",
     enterUsernameAndPassword: "Будь ласка, введіть ім'я користувача та пароль.",
+    enterUsernameEmailAndPassword:
+      "Будь ласка, введіть ім'я користувача, пошту та пароль.",
+    enterEmailForReset: "Спочатку введіть адресу електронної пошти.",
+    openResetLinkFirst:
+      "Спочатку відкрийте посилання з листа, а потім виберіть новий пароль.",
+    enterNewPasswordAndConfirmation:
+      "Введіть новий пароль і підтвердження.",
+    passwordTooShort: "Новий пароль має містити щонайменше 8 символів.",
+    passwordsDoNotMatch: "Обидва поля пароля мають збігатися.",
     authenticationFailed: "Помилка автентифікації.",
     couldNotLogOut: "Не вдалося вийти.",
     loggedOut: "Ви вийшли з акаунта.",
@@ -184,6 +267,19 @@ const translations = {
     taskCountSingular: "{count} завдання",
     taskCountPlural: "{count} завдань",
     activeCount: "активних: {count}",
+    forgotPasswordSent:
+      "Якщо така пошта існує, лист для скидання вже в дорозі.",
+    passwordResetReady:
+      "Посилання для скидання знайдено. Тепер введіть новий пароль нижче.",
+    resetPasswordStepMessage:
+      "Виберіть новий пароль для свого акаунта.",
+    passwordResetSuccess: "Пароль успішно оновлено",
+    passwordResetFailed: "Недійсне або прострочене посилання для скидання",
+    passwordResetEmailNotConfigured:
+      "Надсилання листів для скидання пароля ще не налаштоване на сервері.",
+    passwordResetEmailSendFailed:
+      "Зараз не вдалося надіслати лист для скидання. Спробуйте ще раз.",
+    resetPasswordSubmitting: "Оновлення...",
   },
 };
 
@@ -192,11 +288,14 @@ let tasks = [];
 let currentFilter = "all";
 let currentUser = null;
 let authMode = "login";
+let authView = "auth";
 let currentLanguage = getStoredLanguage();
+let currentResetToken = "";
 
 languageSelect.value = currentLanguage;
 applyTranslations();
 setAuthMode("login");
+prefillResetTokenFromUrl();
 checkSession();
 
 languageSelect.addEventListener("change", function () {
@@ -212,27 +311,44 @@ authModeButtons.forEach(function (button) {
   });
 });
 
+showForgotPasswordButton.addEventListener("click", function () {
+  setAuthView("forgot-password");
+  focusBestResetField();
+});
+
 authForm.addEventListener("submit", async function (event) {
   event.preventDefault();
 
   const username = authUsernameInput.value.trim();
+  const email = authEmailInput.value.trim();
   const password = authPasswordInput.value;
 
-  if (username === "" || password === "") {
+  if (authMode === "register") {
+    if (username === "" || email === "" || password === "") {
+      showAuthStatus(t("enterUsernameEmailAndPassword"));
+      return;
+    }
+  } else if (username === "" || password === "") {
     showAuthStatus(t("enterUsernameAndPassword"));
     return;
   }
 
   try {
+    const requestBody = {
+      username: username,
+      password: password,
+    };
+
+    if (authMode === "register") {
+      requestBody.email = email;
+    }
+
     const response = await fetch(authApiBaseUrl + "/" + authMode, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        username: username,
-        password: password,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const responseData = await response.json();
@@ -243,11 +359,109 @@ authForm.addEventListener("submit", async function (event) {
 
     currentUser = responseData.user;
     authForm.reset();
+    setAuthView("auth");
     showTodoSection();
     showTaskStatus(authMode === "register" ? t("registerSuccess") : t("loginSuccess"));
     await loadTasks();
   } catch (error) {
     showAuthStatus(error.message);
+  }
+});
+
+forgotPasswordForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+
+  const email = forgotEmailInput.value.trim();
+
+  if (email === "") {
+    showAuthStatus(t("enterEmailForReset"));
+    return;
+  }
+
+  try {
+    const response = await fetch(authApiBaseUrl + "/forgot-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email,
+      }),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.error || t("requestFailed"));
+    }
+
+    forgotPasswordForm.reset();
+    showAuthStatus(responseData.message || t("forgotPasswordSent"));
+  } catch (error) {
+    showAuthStatus(error.message);
+  }
+});
+
+resetPasswordForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+
+  const token = currentResetToken;
+  const password = resetPasswordInput.value;
+  const confirmPassword = confirmResetPasswordInput.value;
+
+  if (token === "") {
+    showAuthStatus(t("openResetLinkFirst"));
+    return;
+  }
+
+  if (password === "" || confirmPassword === "") {
+    showAuthStatus(t("enterNewPasswordAndConfirmation"));
+    return;
+  }
+
+  if (password.length < 8) {
+    showAuthStatus(t("passwordTooShort"));
+    resetPasswordInput.focus();
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showAuthStatus(t("passwordsDoNotMatch"));
+    confirmResetPasswordInput.focus();
+    return;
+  }
+
+  try {
+    setResetPasswordSubmitting(true);
+
+    const response = await fetch(authApiBaseUrl + "/reset-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token: token,
+        password: password,
+      }),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.error || t("requestFailed"));
+    }
+
+    resetPasswordForm.reset();
+    clearResetTokenFromUrl();
+    setAuthView("auth");
+    setAuthMode("login");
+    authPasswordInput.value = "";
+    authPasswordInput.focus();
+    showAuthStatus(t("passwordResetSuccess"));
+  } catch (error) {
+    showAuthStatus(makeFriendlyResetErrorMessage(error.message));
+  } finally {
+    setResetPasswordSubmitting(false);
   }
 });
 
@@ -622,7 +836,10 @@ function setAuthMode(nextMode) {
     button.classList.toggle("active", button.dataset.mode === nextMode);
   });
 
-  if (nextMode === "register") {
+  const isRegisterMode = nextMode === "register";
+  authEmailGroup.classList.toggle("hidden", !isRegisterMode);
+
+  if (isRegisterMode) {
     authSubmitButton.textContent = t("createAccount");
     authPasswordInput.autocomplete = "new-password";
     authHelperText.textContent = t("authHelperRegister");
@@ -635,6 +852,26 @@ function setAuthMode(nextMode) {
   hideAuthStatus();
 }
 
+function setAuthView(nextView) {
+  authView = nextView;
+
+  const isNormalAuthView = nextView === "auth";
+  const isForgotPasswordView = nextView === "forgot-password";
+  const isResetPasswordView = nextView === "reset-password";
+
+  authMainView.classList.toggle("hidden", !isNormalAuthView);
+  passwordResetPanel.classList.toggle(
+    "hidden",
+    !isForgotPasswordView && !isResetPasswordView
+  );
+
+  forgotPasswordForm.classList.toggle("hidden", !isForgotPasswordView);
+  resetPasswordForm.classList.toggle("hidden", !isResetPasswordView);
+
+  authHelperText.classList.toggle("hidden", !isNormalAuthView);
+  updateResetPasswordHelperText();
+}
+
 function showAuthSection(message) {
   authSection.classList.remove("hidden");
   todoSection.classList.add("hidden");
@@ -644,7 +881,8 @@ function showAuthSection(message) {
   authForm.reset();
   todoList.innerHTML = "";
   authPasswordInput.value = "";
-  authUsernameInput.focus();
+  setAuthView(currentResetToken ? "reset-password" : "auth");
+  focusBestResetField();
 
   if (message) {
     showAuthStatus(message);
@@ -658,6 +896,98 @@ function showTodoSection() {
   todoSection.classList.remove("hidden");
   currentUserLabel.textContent = currentUser.username;
   hideAuthStatus();
+}
+
+function hidePasswordResetPanel() {
+  forgotPasswordForm.reset();
+  resetPasswordForm.reset();
+  currentResetToken = "";
+  setAuthView("auth");
+  setResetPasswordSubmitting(false);
+}
+
+function prefillResetTokenFromUrl() {
+  const url = new URL(window.location.href);
+  const resetToken = url.searchParams.get("resetToken");
+
+  if (!resetToken) {
+    return;
+  }
+
+  currentResetToken = resetToken;
+  setAuthView("reset-password");
+  resetPasswordInput.focus();
+}
+
+function clearResetTokenFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("resetToken");
+  currentResetToken = "";
+  setAuthView("auth");
+  window.history.replaceState({}, "", url.pathname + url.search);
+}
+
+function focusBestResetField() {
+  if (authView === "reset-password") {
+    resetPasswordInput.focus();
+    return;
+  }
+
+  if (authView === "forgot-password") {
+    forgotEmailInput.focus();
+    return;
+  }
+
+  authUsernameInput.focus();
+}
+
+function makeFriendlyResetErrorMessage(serverMessage) {
+  if (
+    serverMessage === "That reset token is invalid or has expired." ||
+    serverMessage === "Reset token is required."
+  ) {
+    return t("passwordResetFailed");
+  }
+
+  if (
+    serverMessage ===
+    "Password reset email is not configured on the server yet. Add the email environment variables and try again."
+  ) {
+    return t("passwordResetEmailNotConfigured");
+  }
+
+  if (
+    serverMessage ===
+    "The server could not send the password reset email. Please try again."
+  ) {
+    return t("passwordResetEmailSendFailed");
+  }
+
+  return serverMessage || t("requestFailed");
+}
+
+function updateResetPasswordHelperText() {
+  if (!resetPasswordHelperText) {
+    return;
+  }
+
+  if (authView === "reset-password") {
+    resetPasswordHelperText.textContent = t("resetPasswordStepMessage");
+    return;
+  }
+
+  resetPasswordHelperText.textContent = t("forgotPasswordStepMessage");
+}
+
+function setResetPasswordSubmitting(isSubmitting) {
+  if (!resetPasswordSubmitButton) {
+    return;
+  }
+
+  resetPasswordSubmitButton.disabled = isSubmitting;
+  resetPasswordSubmitButton.textContent = isSubmitting
+    ? t("resetPasswordSubmitting")
+    : t("resetPasswordButton");
 }
 
 function normalizePriority(priorityText) {
@@ -728,7 +1058,7 @@ function showAuthStatus(message) {
   window.clearTimeout(showAuthStatus.timeoutId);
   showAuthStatus.timeoutId = window.setTimeout(function () {
     authStatusMessage.classList.add("hidden");
-  }, 3000);
+  }, 4000);
 }
 
 function hideAuthStatus() {
@@ -804,6 +1134,7 @@ function applyTranslations() {
     });
 
   setAuthMode(authMode);
+  updateResetPasswordHelperText();
   updateTaskCount();
   updateEmptyMessage(tasks.length);
 }
