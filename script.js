@@ -129,10 +129,14 @@ const translations = {
     undo: "Undo",
     done: "Done",
     edit: "Edit",
+    save: "Save",
+    cancel: "Cancel",
     delete: "Delete",
     serverCouldNotUpdateTask: "The server could not update the task.",
     taskDeleted: "Task deleted.",
     serverCouldNotDeleteTask: "The server could not delete the task.",
+    invalidDueDate: "Please use YYYY-MM-DD for the due date.",
+    saving: "Saving...",
     editTaskTextPrompt: "Edit your task text:",
     taskCannotBeEmpty: "A task cannot be empty.",
     editCategoryPrompt: "Edit category:",
@@ -247,10 +251,15 @@ const translations = {
     undo: "Скасувати",
     done: "Готово",
     edit: "Редагувати",
+    save: "Зберегти",
+    cancel: "Скасувати",
     delete: "Видалити",
     serverCouldNotUpdateTask: "Сервер не зміг оновити завдання.",
     taskDeleted: "Завдання видалено.",
     serverCouldNotDeleteTask: "Сервер не зміг видалити завдання.",
+    invalidDueDate:
+      "Будь ласка, використайте формат YYYY-MM-DD для дати.",
+    saving: "Збереження...",
     editTaskTextPrompt: "Відредагуйте текст завдання:",
     taskCannotBeEmpty: "Завдання не може бути порожнім.",
     editCategoryPrompt: "Відредагуйте категорію:",
@@ -291,6 +300,7 @@ let authMode = "login";
 let authView = "auth";
 let currentLanguage = getStoredLanguage();
 let currentResetToken = "";
+let editingTaskId = null;
 
 languageSelect.value = currentLanguage;
 applyTranslations();
@@ -626,77 +636,28 @@ function renderTasks() {
       listItem.classList.add("completed");
     }
 
+    if (editingTaskId === task.id) {
+      listItem.classList.add("editing");
+    }
+
     const mainRow = document.createElement("div");
     mainRow.className = "todo-main";
 
     const content = document.createElement("div");
     content.className = "todo-content";
 
-    const taskText = document.createElement("p");
-    taskText.className = "todo-text";
-    taskText.textContent = task.text;
-
-    const metaRow = document.createElement("div");
-    metaRow.className = "todo-meta";
-
-    const categoryBadge = document.createElement("span");
-    categoryBadge.className = "meta-badge";
-    categoryBadge.textContent = t("categoryLabel") + ": " + task.category;
-
-    const priorityBadge = document.createElement("span");
-    priorityBadge.className =
-      "meta-badge priority-" + task.priority.toLowerCase();
-    priorityBadge.textContent =
-      t("priorityLabel") + ": " + translatePriority(task.priority);
-
-    metaRow.appendChild(categoryBadge);
-    metaRow.appendChild(priorityBadge);
-
-    const taskDate = document.createElement("p");
-    taskDate.className = "todo-date";
-    taskDate.textContent = t("createdLabel") + ": " + formatDate(task.createdAt);
-
-    content.appendChild(taskText);
-    content.appendChild(metaRow);
-
-    if (task.dueDate) {
-      const dueDate = document.createElement("p");
-      dueDate.className = "todo-due-date";
-      dueDate.textContent = t("dueLabel") + ": " + formatDueDate(task.dueDate);
-      content.appendChild(dueDate);
-    }
-
-    content.appendChild(taskDate);
-
     const actions = document.createElement("div");
     actions.className = "todo-actions";
 
-    const completeButton = document.createElement("button");
-    completeButton.className = "complete-btn";
-    completeButton.textContent = task.completed ? t("undo") : t("done");
-    completeButton.addEventListener("click", async function () {
-      await updateTask(task.id, {
-        completed: !task.completed,
-      });
-    });
+    if (editingTaskId === task.id) {
+      content.appendChild(createTaskEditForm(task));
+    } else {
+      content.appendChild(createTaskDisplayContent(task));
+      actions.appendChild(createCompleteButton(task));
+      actions.appendChild(createEditButton(task));
+    }
 
-    const editButton = document.createElement("button");
-    editButton.className = "edit-btn";
-    editButton.textContent = t("edit");
-    editButton.addEventListener("click", async function () {
-      await startEditingTask(task);
-    });
-
-    const deleteButton = document.createElement("button");
-    deleteButton.className = "delete-btn";
-    deleteButton.textContent = t("delete");
-    deleteButton.addEventListener("click", async function () {
-      await deleteTask(task.id);
-    });
-
-    actions.appendChild(completeButton);
-    actions.appendChild(editButton);
-    actions.appendChild(deleteButton);
+    actions.appendChild(createDeleteButton(task));
 
     mainRow.appendChild(content);
     mainRow.appendChild(actions);
@@ -708,7 +669,201 @@ function renderTasks() {
   updateEmptyMessage(filteredTasks.length);
 }
 
-async function updateTask(taskId, changes) {
+function createTaskDisplayContent(task) {
+  const fragment = document.createDocumentFragment();
+
+  const taskText = document.createElement("p");
+  taskText.className = "todo-text";
+  taskText.textContent = task.text;
+
+  const metaRow = document.createElement("div");
+  metaRow.className = "todo-meta";
+
+  const categoryBadge = document.createElement("span");
+  categoryBadge.className = "meta-badge";
+  categoryBadge.textContent = t("categoryLabel") + ": " + task.category;
+
+  const priorityBadge = document.createElement("span");
+  priorityBadge.className = "meta-badge priority-" + task.priority.toLowerCase();
+  priorityBadge.textContent =
+    t("priorityLabel") + ": " + translatePriority(task.priority);
+
+  const taskDate = document.createElement("p");
+  taskDate.className = "todo-date";
+  taskDate.textContent = t("createdLabel") + ": " + formatDate(task.createdAt);
+
+  metaRow.appendChild(categoryBadge);
+  metaRow.appendChild(priorityBadge);
+
+  fragment.appendChild(taskText);
+  fragment.appendChild(metaRow);
+
+  if (task.dueDate) {
+    const dueDate = document.createElement("p");
+    dueDate.className = "todo-due-date";
+    dueDate.textContent = t("dueLabel") + ": " + formatDueDate(task.dueDate);
+    fragment.appendChild(dueDate);
+  }
+
+  fragment.appendChild(taskDate);
+
+  return fragment;
+}
+
+function createTaskEditForm(task) {
+  const form = document.createElement("form");
+  form.className = "task-edit-form";
+
+  const textInput = document.createElement("input");
+  textInput.className = "task-edit-input task-edit-text";
+  textInput.type = "text";
+  textInput.value = task.text;
+  textInput.placeholder = t("taskPlaceholder");
+  textInput.autocomplete = "off";
+
+  const secondaryFields = document.createElement("div");
+  secondaryFields.className = "task-edit-grid";
+
+  const categoryField = document.createElement("input");
+  categoryField.className = "task-edit-input";
+  categoryField.type = "text";
+  categoryField.value = task.category;
+  categoryField.placeholder = t("categoryPlaceholder");
+  categoryField.autocomplete = "off";
+
+  const priorityField = document.createElement("select");
+  priorityField.className = "task-edit-input task-edit-select";
+  [
+    { value: "Low", label: t("priorityLowOption") },
+    { value: "Medium", label: t("priorityMediumOption") },
+    { value: "High", label: t("priorityHighOption") },
+  ].forEach(function (optionConfig) {
+    const option = document.createElement("option");
+    option.value = optionConfig.value;
+    option.textContent = optionConfig.label;
+    option.selected = optionConfig.value === task.priority;
+    priorityField.appendChild(option);
+  });
+
+  const dueDateField = document.createElement("input");
+  dueDateField.className = "task-edit-input";
+  dueDateField.type = "date";
+  dueDateField.value = task.dueDate || "";
+
+  const formActions = document.createElement("div");
+  formActions.className = "task-edit-actions";
+
+  const saveButton = document.createElement("button");
+  saveButton.className = "save-btn";
+  saveButton.type = "submit";
+  saveButton.textContent = t("save");
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "cancel-btn";
+  cancelButton.type = "button";
+  cancelButton.textContent = t("cancel");
+  cancelButton.addEventListener("click", function () {
+    editingTaskId = null;
+    renderTasks();
+  });
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const nextText = textInput.value.trim();
+    const nextCategory = categoryField.value.trim();
+    const nextDueDate = dueDateField.value.trim();
+
+    if (nextText === "") {
+      showTaskStatus(t("taskCannotBeEmpty"));
+      textInput.focus();
+      return;
+    }
+
+    if (nextDueDate !== "" && !isValidDueDate(nextDueDate)) {
+      showTaskStatus(t("invalidDueDate"));
+      dueDateField.focus();
+      return;
+    }
+
+    setTaskEditFormSubmitting(form, true);
+
+    const didSave = await updateTask(
+      task.id,
+      {
+        text: nextText,
+        category: nextCategory || t("generalCategory"),
+        priority: priorityField.value,
+        dueDate: nextDueDate,
+      },
+      {
+        skipRender: true,
+      }
+    );
+
+    setTaskEditFormSubmitting(form, false);
+
+    if (!didSave) {
+      return;
+    }
+
+    editingTaskId = null;
+    renderTasks();
+    showTaskStatus(t("taskUpdated"));
+  });
+
+  secondaryFields.appendChild(categoryField);
+  secondaryFields.appendChild(priorityField);
+  secondaryFields.appendChild(dueDateField);
+  formActions.appendChild(saveButton);
+  formActions.appendChild(cancelButton);
+
+  form.appendChild(textInput);
+  form.appendChild(secondaryFields);
+  form.appendChild(formActions);
+
+  window.setTimeout(function () {
+    textInput.focus();
+    textInput.setSelectionRange(textInput.value.length, textInput.value.length);
+  }, 0);
+
+  return form;
+}
+
+function createCompleteButton(task) {
+  const completeButton = document.createElement("button");
+  completeButton.className = "complete-btn";
+  completeButton.textContent = task.completed ? t("undo") : t("done");
+  completeButton.addEventListener("click", async function () {
+    await updateTask(task.id, {
+      completed: !task.completed,
+    });
+  });
+  return completeButton;
+}
+
+function createEditButton(task) {
+  const editButton = document.createElement("button");
+  editButton.className = "edit-btn";
+  editButton.textContent = t("edit");
+  editButton.addEventListener("click", function () {
+    editingTaskId = task.id;
+    renderTasks();
+  });
+  return editButton;
+}
+
+function createDeleteButton(task) {
+  const deleteButton = document.createElement("button");
+  deleteButton.className = "delete-btn";
+  deleteButton.textContent = t("delete");
+  deleteButton.addEventListener("click", async function () {
+    await deleteTask(task.id);
+  });
+  return deleteButton;
+}
+
+async function updateTask(taskId, changes, options) {
   const taskToUpdate = tasks.find(function (task) {
     return task.id === taskId;
   });
@@ -739,9 +894,14 @@ async function updateTask(taskId, changes) {
       return task;
     });
 
-    renderTasks();
+    if (!options || !options.skipRender) {
+      renderTasks();
+    }
+
+    return true;
   } catch (error) {
     showTaskStatus(error.message || t("serverCouldNotUpdateTask"));
+    return false;
   }
 }
 
@@ -750,6 +910,10 @@ async function deleteTask(taskId) {
     await requestTaskJson(taskApiBaseUrl + "/" + taskId, {
       method: "DELETE",
     });
+
+    if (editingTaskId === taskId) {
+      editingTaskId = null;
+    }
 
     tasks = tasks.filter(function (task) {
       return task.id !== taskId;
@@ -760,49 +924,6 @@ async function deleteTask(taskId) {
   } catch (error) {
     showTaskStatus(error.message || t("serverCouldNotDeleteTask"));
   }
-}
-
-async function startEditingTask(task) {
-  // prompt() keeps editing simple for a beginner project.
-  const updatedText = prompt(t("editTaskTextPrompt"), task.text);
-
-  if (updatedText === null) {
-    return;
-  }
-
-  const trimmedText = updatedText.trim();
-
-  if (trimmedText === "") {
-    showTaskStatus(t("taskCannotBeEmpty"));
-    return;
-  }
-
-  const updatedCategory = prompt(t("editCategoryPrompt"), task.category);
-
-  if (updatedCategory === null) {
-    return;
-  }
-
-  const updatedPriority = prompt(t("editPriorityPrompt"), task.priority);
-
-  if (updatedPriority === null) {
-    return;
-  }
-
-  const updatedDueDate = prompt(t("editDueDatePrompt"), task.dueDate);
-
-  if (updatedDueDate === null) {
-    return;
-  }
-
-  await updateTask(task.id, {
-    text: trimmedText,
-    category: updatedCategory.trim() || t("generalCategory"),
-    priority: normalizePriority(updatedPriority),
-    dueDate: updatedDueDate.trim(),
-  });
-
-  showTaskStatus(t("taskUpdated"));
 }
 
 async function requestTaskJson(url, options) {
@@ -1085,6 +1206,28 @@ function formatDueDate(dateString) {
     month: "short",
     day: "numeric",
   });
+}
+
+function isValidDueDate(dateString) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateString);
+}
+
+function setTaskEditFormSubmitting(form, isSubmitting) {
+  const saveButton = form.querySelector(".save-btn");
+  const cancelButton = form.querySelector(".cancel-btn");
+  const fields = form.querySelectorAll("input, select, button");
+
+  fields.forEach(function (field) {
+    field.disabled = isSubmitting;
+  });
+
+  if (saveButton) {
+    saveButton.textContent = isSubmitting ? t("saving") : t("save");
+  }
+
+  if (cancelButton) {
+    cancelButton.textContent = t("cancel");
+  }
 }
 
 function getStoredLanguage() {

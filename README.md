@@ -52,21 +52,28 @@ cd ~/todo-app
 npm install
 ```
 
-### 2. Set your environment variables
+### 2. Create your local environment file
 
-Run these commands in the same terminal before starting the server:
+Copy `.env.example` to `.env` and fill in your real values:
 
 ```bash
-export RESEND_API_KEY="re_your_real_api_key"
-export PASSWORD_RESET_FROM_EMAIL="onboarding@resend.dev"
-export APP_BASE_URL="http://localhost:3000"
+cp .env.example .env
+```
+
+Example `.env` values:
+
+```bash
+RESEND_API_KEY="re_your_real_api_key"
+PASSWORD_RESET_FROM_EMAIL="onboarding@resend.dev"
+APP_BASE_URL="http://localhost:3000"
 ```
 
 Notes:
 
 - `onboarding@resend.dev` is useful for first tests in Resend.
 - If you use your own domain in Resend, replace the sender email with your verified address.
-- The app does not read a `.env` file automatically. It reads variables from `process.env`.
+- The app loads `.env` automatically through `dotenv`.
+- On Render, environment variables should still be configured in the Render dashboard instead of committing a `.env` file.
 
 ### 3. Start the server
 

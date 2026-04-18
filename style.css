@@ -170,6 +170,8 @@ h1 {
 #reset-password-input:focus,
 #confirm-reset-password-input:focus,
 #todo-input:focus,
+.task-edit-input:focus,
+.task-edit-select:focus,
 #category-input:focus,
 #priority-input:focus,
 #due-date-input:focus {
@@ -360,6 +362,11 @@ button:disabled {
   background: #f8fafc;
 }
 
+.todo-item.editing {
+  border-color: rgba(15, 118, 110, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+}
+
 .todo-main {
   display: flex;
   justify-content: space-between;
@@ -432,6 +439,43 @@ button:disabled {
   min-width: 76px;
 }
 
+.task-edit-form {
+  display: grid;
+  gap: 12px;
+}
+
+.task-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.task-edit-input,
+.task-edit-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 15px;
+  background: #ffffff;
+  color: var(--text-color);
+}
+
+.task-edit-text {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.task-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.task-edit-actions button {
+  min-width: 92px;
+}
+
 .complete-btn {
   background: #dcfce7;
   color: #166534;
@@ -448,6 +492,24 @@ button:disabled {
 
 .edit-btn:hover {
   background: #bfdbfe;
+}
+
+.save-btn {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
+.save-btn:hover {
+  background: var(--primary-dark);
+}
+
+.cancel-btn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.cancel-btn:hover {
+  background: #cbd5e1;
 }
 
 .delete-btn {
@@ -485,6 +547,10 @@ button:disabled {
 
   .todo-main {
     flex-direction: column;
+  }
+
+  .task-edit-grid {
+    grid-template-columns: 1fr;
   }
 
   .todo-actions {
