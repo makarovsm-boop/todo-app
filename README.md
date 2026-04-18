@@ -25,7 +25,7 @@ It supports:
 2. The app sends that email to `POST /auth/forgot-password`.
 3. The server creates a secure random token with `crypto.randomBytes()`.
 4. The server stores only a hashed version of that token in the `password_resets` table.
-5. The server builds a reset link like `https://your-app-url/?resetToken=...`.
+5. The server builds a reset link like `https://your-app-url/reset-password?resetToken=...`.
 6. The server sends that link by email through Resend.
 7. The user opens the link from the email.
 8. The frontend reads `?resetToken=...` from the URL and fills in the reset form.
@@ -268,7 +268,7 @@ Expected result:
 Expected result:
 
 - the browser opens your app
-- the URL contains `?resetToken=...`
+- the URL contains `/reset-password?resetToken=...`
 - the password reset panel is open
 - the token field is already filled in
 

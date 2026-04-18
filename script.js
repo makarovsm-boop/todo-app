@@ -1041,8 +1041,7 @@ function prefillResetTokenFromUrl() {
 }
 
 function clearResetTokenFromUrl() {
-  const url = new URL(window.location.href);
-  url.searchParams.delete("resetToken");
+  const url = new URL(window.location.origin + "/");
   currentResetToken = "";
   setAuthView("auth");
   window.history.replaceState({}, "", url.pathname + url.search);

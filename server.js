@@ -402,6 +402,10 @@ app.get("/", function (request, response) {
   response.sendFile(path.join(__dirname, "index.html"));
 });
 
+app.get("/reset-password", function (request, response) {
+  response.sendFile(path.join(__dirname, "index.html"));
+});
+
 app.listen(PORT, function () {
   console.log("Server running at http://localhost:" + PORT);
   console.log("Using SQLite database at " + databasePath);
@@ -708,5 +712,5 @@ async function sendPasswordResetEmail(email, resetLink, expiresAt) {
 }
 
 function buildPasswordResetLink(resetToken) {
-  return appBaseUrl + "/?resetToken=" + encodeURIComponent(resetToken);
+  return appBaseUrl + "/reset-password?resetToken=" + encodeURIComponent(resetToken);
 }
